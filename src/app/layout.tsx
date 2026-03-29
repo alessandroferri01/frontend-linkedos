@@ -18,6 +18,14 @@ export const metadata: Metadata = {
   description: "Genera post LinkedIn professionali con l'AI",
 };
 
+const themeScript = `
+(function(){
+  var t=localStorage.getItem('theme');
+  var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);
+  if(d)document.documentElement.classList.add('dark');
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -27,8 +35,15 @@ export default function RootLayout({
     <html
       lang="it"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body
+        className="min-h-full flex flex-col transition-colors duration-300"
+        style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+      >
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

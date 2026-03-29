@@ -1,6 +1,6 @@
 import type { AuthResponse, Post, ApiResponse, GeneratePostRequest } from '@/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -78,6 +78,10 @@ export const api = {
 
     async getAll(): Promise<Post[]> {
       return request<Post[]>('/posts');
+    },
+
+    async getById(id: string): Promise<Post> {
+      return request<Post>(`/posts/${id}`);
     },
 
     async delete(id: string): Promise<{ message: string }> {
