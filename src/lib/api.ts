@@ -1,4 +1,4 @@
-import type { AuthResponse, Post, ApiResponse, GeneratePostRequest } from '@/types';
+import type { AuthResponse, Post, ApiResponse, GeneratePostRequest, User } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
@@ -66,6 +66,10 @@ export const api = {
       localStorage.removeItem('token');
       window.location.href = '/login';
     },
+
+    async me(): Promise<User> {
+      return request<User>('/auth/me');
+    },
   },
 
   posts: {
@@ -94,6 +98,18 @@ export const api = {
   billing: {
     async createSession(): Promise<{ url: string }> {
       return request<{ url: string }>('/billing/create-session', {
+        method: 'POST',
+      });
+    },
+
+    async verifySubscription(): Promise<{ activated: boolean }> {
+      return request<{ activated: boolean }>('/billing/verify-subscription', {
+        method: 'POST',
+      });
+    },
+
+    async cancelSubscription(): Promise<{ cancelled: boolean }> {
+      return request<{ cancelled: boolean }>('/billing/cancel-subscription', {
         method: 'POST',
       });
     },

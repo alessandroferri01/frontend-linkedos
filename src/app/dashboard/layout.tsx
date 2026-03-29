@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const navItems = [
@@ -62,6 +63,11 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const setUser = useAuthStore((s) => s.setUser);
+
+  useEffect(() => {
+    api.auth.me().then(setUser).catch(() => {});
+  }, [setUser]);
 
   function isActive(item: typeof navItems[number]) {
     if (item.exact) return pathname === item.href;

@@ -2,14 +2,25 @@
 
 import Link from 'next/link';
 import { useEffect } from 'react';
+import { api } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth';
 
 export default function BillingSuccessPage() {
+  const setUser = useAuthStore((s) => s.setUser);
+
   useEffect(() => {
+    // Verify the subscription on Stripe and activate in DB, then refresh user data
+    api.billing
+      .verifySubscription()
+      .then(() => api.auth.me())
+      .then(setUser)
+      .catch(() => {});
+
     const timer = setTimeout(() => {
       window.location.href = '/dashboard';
     }, 5000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [setUser]);
 
   return (
     <div className="flex min-h-screen items-center justify-center" style={{ background: 'var(--bg-primary)' }}>

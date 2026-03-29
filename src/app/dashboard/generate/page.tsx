@@ -6,11 +6,13 @@ import { generatePostSchema, type GeneratePostFormData } from '@/lib/validations
 import { api } from '@/lib/api';
 import { useState } from 'react';
 import type { Post } from '@/types';
+import { useAuthStore } from '@/stores/auth';
 
 export default function GeneratePage() {
   const [result, setResult] = useState<Post | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const setUser = useAuthStore((s) => s.setUser);
 
   const {
     register,
@@ -27,6 +29,8 @@ export default function GeneratePage() {
     try {
       const post = await api.posts.generate({ topic: data.topic });
       setResult(post);
+      // Refresh user data to update credits in real-time
+      api.auth.me().then(setUser).catch(() => {});
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore nella generazione');
     }
