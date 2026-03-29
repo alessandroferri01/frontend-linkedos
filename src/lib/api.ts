@@ -1,0 +1,97 @@
+import type { AuthResponse, Post, ApiResponse, GeneratePostRequest } from '@/types';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('token');
+}
+
+async function request<T>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const token = getToken();
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (res.status === 401) {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+    throw new Error('Sessione scaduta');
+  }
+
+  const json: ApiResponse<T> = await res.json();
+
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || `Errore ${res.status}`);
+  }
+
+  return json.data;
+}
+
+export const api = {
+  auth: {
+    async login(email: string, password: string): Promise<AuthResponse> {
+      const data = await request<AuthResponse>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      localStorage.setItem('token', data.token);
+      return data;
+    },
+
+    async register(email: string, password: string): Promise<AuthResponse> {
+      const data = await request<AuthResponse>('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      localStorage.setItem('token', data.token);
+      return data;
+    },
+
+    logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    },
+  },
+
+  posts: {
+    async generate(input: GeneratePostRequest): Promise<Post> {
+      return request<Post>('/posts/generate', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      });
+    },
+
+    async getAll(): Promise<Post[]> {
+      return request<Post[]>('/posts');
+    },
+
+    async delete(id: string): Promise<{ message: string }> {
+      return request<{ message: string }>(`/posts/${id}`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
+  billing: {
+    async createSession(): Promise<{ url: string }> {
+      return request<{ url: string }>('/billing/create-session', {
+        method: 'POST',
+      });
+    },
+  },
+};
