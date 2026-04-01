@@ -2,9 +2,36 @@ import type { AuthResponse, Post, ApiResponse, GeneratePostRequest, User, Pagina
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
+const ERROR_MESSAGES: Record<string, string> = {
+  INVALID_CREDENTIALS: 'Email o password non corretti',
+  EMAIL_EXISTS: 'Questa email è già registrata',
+  UNAUTHORIZED: 'Accesso non autorizzato',
+  USER_NOT_FOUND: 'Utente non trovato',
+  FORBIDDEN: 'Non hai i permessi per questa operazione',
+  NOT_FOUND: 'Risorsa non trovata',
+  BAD_REQUEST: 'Richiesta non valida',
+  NO_CREDITS: 'Crediti esauriti. Passa al piano Pro per continuare',
+  TOO_MANY_REQUESTS: 'Troppe richieste. Riprova tra qualche minuto',
+  VALIDATION_ERROR: 'Dati inseriti non validi',
+  INTERNAL_ERROR: 'Errore del server. Riprova più tardi',
+  CONFLICT: 'Operazione in conflitto. Riprova',
+};
+
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('token');
+}
+
+function getErrorMessage(error: { message: string; code: string } | null, status: number): string {
+  if (error?.code && ERROR_MESSAGES[error.code]) {
+    return ERROR_MESSAGES[error.code];
+  }
+  if (error?.message) {
+    return error.message;
+  }
+  if (status === 429) return ERROR_MESSAGES.TOO_MANY_REQUESTS;
+  if (status >= 500) return ERROR_MESSAGES.INTERNAL_ERROR;
+  return `Errore imprevisto (${status})`;
 }
 
 async function request<T>(
@@ -27,7 +54,9 @@ async function request<T>(
     headers,
   });
 
-  if (res.status === 401) {
+  // On 401, redirect to login ONLY for non-auth endpoints
+  const isAuthEndpoint = endpoint.startsWith('/auth/login') || endpoint.startsWith('/auth/register');
+  if (res.status === 401 && !isAuthEndpoint) {
     localStorage.removeItem('token');
     window.location.href = '/login';
     throw new Error('Sessione scaduta');
@@ -36,7 +65,7 @@ async function request<T>(
   const json: ApiResponse<T> = await res.json();
 
   if (!res.ok || !json.success) {
-    throw new Error(json.error || `Errore ${res.status}`);
+    throw new Error(getErrorMessage(json.error, res.status));
   }
 
   return json.data;

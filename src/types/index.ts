@@ -37,7 +37,7 @@ export interface Post {
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
-  error: string | null;
+  error: { message: string; code: string } | null;
 }
 
 export interface Pagination {

@@ -1,7 +1,26 @@
+'use client';
+
 import Link from 'next/link';
+import { useSyncExternalStore } from 'react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
+function getTokenSnapshot() {
+  return localStorage.getItem('token');
+}
+
+function getServerSnapshot() {
+  return null;
+}
+
+function subscribeToStorage(callback: () => void) {
+  window.addEventListener('storage', callback);
+  return () => window.removeEventListener('storage', callback);
+}
+
 export default function Home() {
+  const token = useSyncExternalStore(subscribeToStorage, getTokenSnapshot, getServerSnapshot);
+  const isLoggedIn = !!token;
+
   return (
     <div
       className="relative flex min-h-screen flex-col overflow-hidden"
@@ -31,20 +50,32 @@ export default function Home() {
           </span>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Link
-              href="/login"
-              className="rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Accedi
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95"
-              style={{ background: 'var(--accent)', boxShadow: 'var(--shadow-glow)' }}
-            >
-              Inizia gratis
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                className="rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95"
+                style={{ background: 'var(--accent)', boxShadow: 'var(--shadow-glow)' }}
+              >
+                Vai alla Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Accedi
+                </Link>
+                <Link
+                  href="/register"
+                  className="rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95"
+                  style={{ background: 'var(--accent)', boxShadow: 'var(--shadow-glow)' }}
+                >
+                  Inizia gratis
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -100,30 +131,48 @@ export default function Home() {
           </p>
 
           <div className="stagger-2 animate-fade-in-up mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <Link
-              href="/register"
-              className="group relative inline-flex items-center gap-2 rounded-2xl px-8 py-4 text-base font-semibold text-white transition-all duration-300 hover:scale-105 hover:shadow-xl active:scale-95"
-              style={{
-                background: 'linear-gradient(135deg, var(--accent), #7c3aed)',
-                boxShadow: 'var(--shadow-glow)',
-              }}
-            >
-              Inizia gratis
-              <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-2xl border px-8 py-4 text-base font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
-              style={{
-                borderColor: 'var(--border-default)',
-                color: 'var(--text-primary)',
-                background: 'var(--bg-secondary)',
-              }}
-            >
-              Ho già un account
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                className="group relative inline-flex items-center gap-2 rounded-2xl px-8 py-4 text-base font-semibold text-white transition-all duration-300 hover:scale-105 hover:shadow-xl active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, var(--accent), #7c3aed)',
+                  boxShadow: 'var(--shadow-glow)',
+                }}
+              >
+                Vai alla Dashboard
+                <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/register"
+                  className="group relative inline-flex items-center gap-2 rounded-2xl px-8 py-4 text-base font-semibold text-white transition-all duration-300 hover:scale-105 hover:shadow-xl active:scale-95"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--accent), #7c3aed)',
+                    boxShadow: 'var(--shadow-glow)',
+                  }}
+                >
+                  Inizia gratis
+                  <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
+                <Link
+                  href="/login"
+                  className="rounded-2xl border px-8 py-4 text-base font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+                  style={{
+                    borderColor: 'var(--border-default)',
+                    color: 'var(--text-primary)',
+                    background: 'var(--bg-secondary)',
+                  }}
+                >
+                  Ho già un account
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
