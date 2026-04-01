@@ -13,7 +13,7 @@ const freePlan = {
 const proPlan = {
   name: 'Pro',
   price: '19',
-  features: ['100 crediti/mese', 'Generazione post AI', 'Storico post', 'Supporto prioritario'],
+  features: ['30 crediti/mese', 'Generazione post AI', 'Storico post', 'Supporto prioritario'],
 };
 
 export default function BillingPage() {
