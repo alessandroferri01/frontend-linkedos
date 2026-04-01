@@ -7,6 +7,7 @@ interface AuthState {
   setUser: (user: User) => void;
   clearUser: () => void;
   updateCredits: (credits: number) => void;
+  updateUser: (data: Partial<User>) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -20,5 +21,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   updateCredits: (credits) =>
     set((state) => ({
       user: state.user ? { ...state.user, creditsRemaining: credits } : null,
+    })),
+
+  updateUser: (data) =>
+    set((state) => ({
+      user: state.user ? { ...state.user, ...data } : null,
     })),
 }));

@@ -21,3 +21,11 @@ export const generatePostSchema = z.object({
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type GeneratePostFormData = z.infer<typeof generatePostSchema>;
+
+export const updateProfileSchema = z.object({
+  firstName: z.string().max(50, 'Il nome non può superare 50 caratteri').optional().or(z.literal('')),
+  lastName: z.string().max(50, 'Il cognome non può superare 50 caratteri').optional().or(z.literal('')),
+  phone: z.string().max(20, 'Il telefono non può superare 20 caratteri').optional().or(z.literal('')),
+});
+
+export type UpdateProfileFormData = z.infer<typeof updateProfileSchema>;

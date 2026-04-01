@@ -1,4 +1,4 @@
-import type { AuthResponse, Post, ApiResponse, GeneratePostRequest, User } from '@/types';
+import type { AuthResponse, Post, ApiResponse, GeneratePostRequest, User, PaginatedPosts, PostsQuery } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
@@ -70,6 +70,13 @@ export const api = {
     async me(): Promise<User> {
       return request<User>('/auth/me');
     },
+
+    async updateProfile(data: { firstName?: string; lastName?: string; phone?: string }): Promise<User> {
+      return request<User>('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
   },
 
   posts: {
@@ -80,8 +87,15 @@ export const api = {
       });
     },
 
-    async getAll(): Promise<Post[]> {
-      return request<Post[]>('/posts');
+    async getAll(query?: PostsQuery): Promise<PaginatedPosts> {
+      const params = new URLSearchParams();
+      if (query?.page) params.set('page', String(query.page));
+      if (query?.limit) params.set('limit', String(query.limit));
+      if (query?.sortBy) params.set('sortBy', query.sortBy);
+      if (query?.sortOrder) params.set('sortOrder', query.sortOrder);
+      if (query?.search) params.set('search', query.search);
+      const qs = params.toString();
+      return request<PaginatedPosts>(`/posts${qs ? `?${qs}` : ''}`);
     },
 
     async getById(id: string): Promise<Post> {
