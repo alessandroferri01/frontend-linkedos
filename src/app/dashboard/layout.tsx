@@ -190,7 +190,7 @@ export default function DashboardLayout({
         {/* Mobile dropdown menu */}
         {mobileOpen && (
           <div
-            className="animate-fade-in-down border-b p-3 md:hidden"
+            className="animate-fade-in-down fixed left-0 right-0 top-14 z-30 border-b p-3 md:hidden"
             style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-default)' }}
           >
             {navItems.map((item) => {

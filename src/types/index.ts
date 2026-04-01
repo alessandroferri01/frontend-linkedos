@@ -13,6 +13,13 @@ export interface AuthResponse {
   token: string;
 }
 
+export interface AIProfile {
+  profession: string | null;
+  tone: string | null;
+  targetAudience: string | null;
+  writingStyle: string | null;
+}
+
 export interface GeneratePostRequest {
   topic: string;
   length?: 'short' | 'medium' | 'long';

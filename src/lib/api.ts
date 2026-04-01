@@ -1,4 +1,4 @@
-import type { AuthResponse, Post, ApiResponse, GeneratePostRequest, User, PaginatedPosts, PostsQuery } from '@/types';
+import type { AuthResponse, Post, ApiResponse, GeneratePostRequest, User, PaginatedPosts, PostsQuery, AIProfile } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
@@ -73,6 +73,17 @@ export const api = {
 
     async updateProfile(data: { firstName?: string; lastName?: string; phone?: string }): Promise<User> {
       return request<User>('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async getAIProfile(): Promise<AIProfile> {
+      return request<AIProfile>('/auth/ai-profile');
+    },
+
+    async updateAIProfile(data: { profession?: string; tone?: string; targetAudience?: string; writingStyle?: string }): Promise<AIProfile> {
+      return request<AIProfile>('/auth/ai-profile', {
         method: 'PUT',
         body: JSON.stringify(data),
       });
