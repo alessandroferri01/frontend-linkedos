@@ -112,7 +112,7 @@ export default function HistoryPage() {
   const showingTo = pagination ? Math.min(pagination.page * pagination.limit, pagination.total) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-hidden">
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -192,7 +192,7 @@ export default function HistoryPage() {
         </div>
 
         {/* Sort */}
-        <div className="relative shrink-0">
+        <div className="relative sm:shrink-0">
           <svg
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
             style={{ color: 'var(--text-tertiary)' }}
@@ -206,7 +206,7 @@ export default function HistoryPage() {
           <select
             value={sort}
             onChange={(e) => handleSortChange(e.target.value)}
-            className="focus-ring appearance-none rounded-xl border py-2.5 pl-10 pr-8 text-sm font-medium transition-all duration-200"
+            className="focus-ring w-full appearance-none rounded-xl border py-2.5 pl-10 pr-8 text-sm font-medium transition-all duration-200"
             style={{
               background: 'var(--bg-tertiary)',
               borderColor: 'var(--border-default)',

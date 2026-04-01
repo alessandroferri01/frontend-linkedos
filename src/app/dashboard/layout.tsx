@@ -150,7 +150,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main area */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
         {/* Mobile top bar */}
         <header
           className="glass sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 md:hidden"
