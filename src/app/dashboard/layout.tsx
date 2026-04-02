@@ -150,10 +150,10 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main area */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
         {/* Mobile top bar */}
         <header
-          className="glass sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 md:hidden"
+          className="glass fixed top-0 left-0 right-0 z-30 flex h-14 items-center justify-between border-b px-4 md:hidden"
           style={{ borderColor: 'var(--border-default)' }}
         >
           <div className="flex items-center gap-2">
@@ -225,7 +225,7 @@ export default function DashboardLayout({
         )}
 
         {/* Content */}
-        <main className="flex-1 p-4 pb-20 sm:p-6 md:pb-6">
+        <main className="flex-1 p-4 pt-18 pb-20 sm:p-6 sm:pt-20 md:pt-6 md:pb-6">
           <div className="animate-fade-in mx-auto max-w-4xl">{children}</div>
         </main>
 
