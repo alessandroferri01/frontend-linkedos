@@ -7,13 +7,24 @@ import { useAuthStore } from '@/stores/auth';
 const freePlan = {
   name: 'Free',
   price: '0',
-  features: ['5 crediti', 'Generazione post AI', 'Storico post'],
+  features: [
+    { text: '5 crediti', description: 'Per iniziare a creare contenuti' },
+    { text: 'Modello AI base', description: 'Generazione veloce, ideale per bozze rapide' },
+    { text: 'Lunghezza media', description: 'Post di lunghezza standard' },
+    { text: 'Storico post', description: 'Accesso ai post generati' },
+  ],
 };
 
 const proPlan = {
   name: 'Pro',
   price: '19',
-  features: ['30 crediti/mese', 'Generazione post AI', 'Storico post', 'Supporto prioritario'],
+  features: [
+    { text: '30 crediti/mese', description: 'Crediti rinnovati ogni mese' },
+    { text: 'Modello AI avanzato', description: 'Più creativo, preciso e articolato' },
+    { text: 'Lunghezza personalizzabile', description: 'Scegli tra post brevi, medi o lunghi' },
+    { text: 'Storico post', description: 'Accesso ai post generati' },
+    { text: 'Supporto prioritario', description: 'Assistenza dedicata via email' },
+  ],
 };
 
 export default function BillingPage() {
@@ -100,13 +111,16 @@ export default function BillingPage() {
               /mese
             </span>
           </p>
-          <ul className="mt-6 space-y-3">
+          <ul className="mt-6 space-y-4">
             {freePlan.features.map((f) => (
-              <li key={f} className="flex items-center gap-2.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                <svg className="h-4 w-4 shrink-0" style={{ color: 'var(--success)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <li key={f.text} className="flex items-start gap-2.5">
+                <svg className="mt-0.5 h-4 w-4 shrink-0" style={{ color: 'var(--success)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
-                {f}
+                <div>
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{f.text}</span>
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{f.description}</p>
+                </div>
               </li>
             ))}
           </ul>
@@ -149,13 +163,16 @@ export default function BillingPage() {
               /mese
             </span>
           </p>
-          <ul className="mt-6 space-y-3">
+          <ul className="mt-6 space-y-4">
             {proPlan.features.map((f) => (
-              <li key={f} className="flex items-center gap-2.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                <svg className="h-4 w-4 shrink-0" style={{ color: 'var(--accent)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <li key={f.text} className="flex items-start gap-2.5">
+                <svg className="mt-0.5 h-4 w-4 shrink-0" style={{ color: 'var(--accent)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
-                {f}
+                <div>
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{f.text}</span>
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{f.description}</p>
+                </div>
               </li>
             ))}
           </ul>
