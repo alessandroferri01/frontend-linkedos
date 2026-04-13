@@ -1,4 +1,4 @@
-import type { AuthResponse, Post, ApiResponse, GeneratePostRequest, User, PaginatedPosts, PostsQuery, AIProfile } from '@/types';
+import type { AuthResponse, Post, ApiResponse, GeneratePostRequest, User, PaginatedPosts, PostsQuery, AIProfile, LinkedInStatus, LinkedInPostStats } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
@@ -166,6 +166,32 @@ export const api = {
       return request<{ cancelled: boolean }>('/billing/cancel-subscription', {
         method: 'POST',
       });
+    },
+  },
+
+  linkedin: {
+    async connect(): Promise<{ url: string }> {
+      return request<{ url: string }>('/linkedin/connect');
+    },
+
+    async disconnect(): Promise<{ disconnected: boolean }> {
+      return request<{ disconnected: boolean }>('/linkedin/disconnect', {
+        method: 'DELETE',
+      });
+    },
+
+    async status(): Promise<LinkedInStatus> {
+      return request<LinkedInStatus>('/linkedin/status');
+    },
+
+    async publishPost(postId: string): Promise<{ linkedinPostUrn: string }> {
+      return request<{ linkedinPostUrn: string }>(`/linkedin/publish/${postId}`, {
+        method: 'POST',
+      });
+    },
+
+    async getPostStats(postId: string): Promise<LinkedInPostStats> {
+      return request<LinkedInPostStats>(`/linkedin/stats/${postId}`);
     },
   },
 };

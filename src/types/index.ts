@@ -6,6 +6,7 @@ export interface User {
   phone?: string | null;
   subscriptionStatus: 'FREE' | 'ACTIVE' | 'PAST_DUE';
   creditsRemaining: number;
+  linkedinConnected?: boolean;
 }
 
 export interface AuthResponse {
@@ -32,6 +33,9 @@ export interface Post {
   generatedContent: string;
   createdAt: string;
   updatedAt: string;
+  publishedToLinkedin?: boolean;
+  publishedAt?: string | null;
+  linkedinPostUrn?: string | null;
 }
 
 export interface ApiResponse<T> {
@@ -63,4 +67,15 @@ export interface PostsQuery {
 export interface ApiError {
   message: string;
   statusCode: number;
+}
+
+export interface LinkedInStatus {
+  connected: boolean;
+  linkedinId: string | null;
+}
+
+export interface LinkedInPostStats {
+  likeCount: number;
+  commentCount: number;
+  shareCount: number;
 }

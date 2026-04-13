@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { api } from '@/lib/api';
-import type { AIProfile } from '@/types';
+import type { AIProfile, LinkedInStatus } from '@/types';
+import { useToast } from '@/components/ui/toast';
 
 const statusLabels: Record<string, { label: string; color: string; bg: string }> = {
   FREE: { label: 'Free', color: 'var(--text-secondary)', bg: 'var(--bg-tertiary)' },
@@ -15,6 +17,8 @@ export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
   const status = statusLabels[user?.subscriptionStatus ?? ''] ?? statusLabels.FREE;
+  const { toast } = useToast();
+  const searchParams = useSearchParams();
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -31,6 +35,9 @@ export default function ProfilePage() {
   const [targetAudience, setTargetAudience] = useState('');
   const [writingStyle, setWritingStyle] = useState('');
 
+  // LinkedIn state
+  const [linkedinStatus, setLinkedinStatus] = useState<LinkedInStatus | null>(null);
+  const [linkedinLoading, setLinkedinLoading] = useState(false);
   useEffect(() => {
     api.auth.getAIProfile().then((profile) => {
       setAiProfile(profile);
@@ -39,7 +46,26 @@ export default function ProfilePage() {
       setTargetAudience(profile.targetAudience ?? '');
       setWritingStyle(profile.writingStyle ?? '');
     }).catch(() => {});
+
+    // Load LinkedIn status
+    api.linkedin.status().then(setLinkedinStatus).catch(() => {});
   }, []);
+
+  // Handle LinkedIn OAuth callback
+  useEffect(() => {
+    const linkedinResult = searchParams.get('linkedin');
+    if (linkedinResult === 'success') {
+      toast('Account LinkedIn collegato con successo!', 'success');
+      api.linkedin.status().then(setLinkedinStatus).catch(() => {});
+      window.history.replaceState({}, '', '/dashboard/profile');
+    } else if (linkedinResult === 'error') {
+      toast('Errore nel collegamento con LinkedIn', 'error');
+      window.history.replaceState({}, '', '/dashboard/profile');
+    } else if (linkedinResult === 'expired') {
+      toast('Sessione scaduta. Riprova il collegamento', 'error');
+      window.history.replaceState({}, '', '/dashboard/profile');
+    }
+  }, [searchParams, toast]);
 
   const handleEdit = () => {
     setFirstName(user?.firstName ?? '');
@@ -100,6 +126,30 @@ export default function ProfilePage() {
   };
 
   const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ');
+
+  async function handleLinkedinConnect() {
+    setLinkedinLoading(true);
+    try {
+      const { url } = await api.linkedin.connect();
+      window.location.href = url;
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Errore nel collegamento', 'error');
+      setLinkedinLoading(false);
+    }
+  }
+
+  async function handleLinkedinDisconnect() {
+    setLinkedinLoading(true);
+    try {
+      await api.linkedin.disconnect();
+      setLinkedinStatus({ connected: false, linkedinId: null });
+      toast('Account LinkedIn scollegato', 'info');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Errore nello scollegamento', 'error');
+    } finally {
+      setLinkedinLoading(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -464,6 +514,126 @@ export default function ProfilePage() {
                   Annulla
                 </button>
               </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* LinkedIn Integration */}
+      <div
+        className="rounded-2xl border p-6"
+        style={{
+          background: 'var(--bg-secondary)',
+          borderColor: 'var(--border-default)',
+        }}
+      >
+        <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-xl"
+                style={{ background: '#0A66C2' }}
+              >
+                <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
+                  LinkedIn
+                </h2>
+                <p className="mt-0.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  Collega il tuo account per pubblicare direttamente
+                </p>
+              </div>
+            </div>
+            {linkedinStatus?.connected && (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                style={{ background: 'var(--success-light)', color: 'var(--success)' }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--success)' }} />
+                Collegato
+              </span>
+            )}
+          </div>
+
+          {linkedinStatus?.connected ? (
+            <div className="space-y-4">
+              <div className="rounded-xl p-4" style={{ background: 'var(--bg-tertiary)' }}>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-white text-xs font-bold"
+                    style={{ background: '#0A66C2' }}
+                  >
+                    in
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      Account LinkedIn collegato
+                    </p>
+                    <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                      Puoi pubblicare i tuoi post direttamente su LinkedIn
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={handleLinkedinDisconnect}
+                disabled={linkedinLoading}
+                className="focus-ring inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--error) 30%, transparent)',
+                  color: 'var(--error)',
+                }}
+              >
+                {linkedinLoading ? 'Scollegamento...' : 'Scollega LinkedIn'}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-xl p-4" style={{ background: 'var(--bg-tertiary)' }}>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Collega il tuo account LinkedIn per pubblicare i post generati direttamente sul tuo profilo e monitorare le statistiche di engagement.
+                </p>
+                <ul className="mt-3 space-y-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  <li className="flex items-center gap-2">
+                    <svg className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--success)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    Pubblica con un click dal tuo storico
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--success)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    Monitora like, commenti e condivisioni
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--success)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    Pubblica subito dopo la generazione
+                  </li>
+                </ul>
+              </div>
+              <button
+                onClick={handleLinkedinConnect}
+                disabled={linkedinLoading}
+                className="focus-ring inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                style={{ background: '#0A66C2' }}
+              >
+                {linkedinLoading ? (
+                  'Collegamento...'
+                ) : (
+                  <>
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                    </svg>
+                    Collega LinkedIn
+                  </>
+                )}
+              </button>
             </div>
           )}
         </div>
