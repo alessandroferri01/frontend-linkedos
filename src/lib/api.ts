@@ -1,4 +1,4 @@
-import type { AuthResponse, Post, ApiResponse, GeneratePostRequest, User, PaginatedPosts, PostsQuery, AIProfile, LinkedInStatus, LinkedInPostStats } from '@/types';
+import type { AuthResponse, Post, ApiResponse, GeneratePostRequest, User, PaginatedPosts, PostsQuery, AIProfile, LinkedInStatus } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
@@ -184,14 +184,19 @@ export const api = {
       return request<LinkedInStatus>('/linkedin/status');
     },
 
-    async publishPost(postId: string): Promise<{ linkedinPostUrn: string }> {
+    async publishPost(postId: string, content?: string): Promise<{ linkedinPostUrn: string }> {
       return request<{ linkedinPostUrn: string }>(`/linkedin/publish/${postId}`, {
         method: 'POST',
+        body: content !== undefined ? JSON.stringify({ content }) : undefined,
       });
     },
 
-    async getPostStats(postId: string): Promise<LinkedInPostStats> {
-      return request<LinkedInPostStats>(`/linkedin/stats/${postId}`);
+    async verifyPosts(postIds: string[]): Promise<{ removedIds: string[] }> {
+      return request<{ removedIds: string[] }>('/linkedin/verify', {
+        method: 'POST',
+        body: JSON.stringify({ postIds }),
+      });
     },
+
   },
 };

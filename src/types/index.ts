@@ -74,8 +74,3 @@ export interface LinkedInStatus {
   linkedinId: string | null;
 }
 
-export interface LinkedInPostStats {
-  likeCount: number;
-  commentCount: number;
-  shareCount: number;
-}

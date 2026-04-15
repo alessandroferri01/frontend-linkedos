@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import type { Post, LinkedInPostStats } from '@/types';
+import type { Post } from '@/types';
 import { useAuthStore } from '@/stores/auth';
 import { useToast } from '@/components/ui/toast';
+import { LinkedInPublishModal } from '@/components/ui/linkedin-publish-modal';
 
 function wordCount(text: string) {
   return text.split(/\s+/).filter(Boolean).length;
@@ -20,8 +21,7 @@ export default function PostDetailPage() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [stats, setStats] = useState<LinkedInPostStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
   const user = useAuthStore((s) => s.user);
   const { toast } = useToast();
 
@@ -29,7 +29,16 @@ export default function PostDetailPage() {
     if (!id) return;
     api.posts
       .getById(id)
-      .then(setPost)
+      .then((p) => {
+        setPost(p);
+        if (p.publishedToLinkedin && p.linkedinPostUrn) {
+          api.linkedin.verifyPosts([p.id]).then(({ removedIds }) => {
+            if (removedIds.includes(p.id)) {
+              setPost({ ...p, publishedToLinkedin: false, publishedAt: null, linkedinPostUrn: null });
+            }
+          }).catch(() => {});
+        }
+      })
       .catch((err) => setError(err instanceof Error ? err.message : 'Errore nel caricamento'))
       .finally(() => setLoading(false));
   }, [id]);
@@ -51,39 +60,20 @@ export default function PostDetailPage() {
     }
   }
 
-  async function handlePublishToLinkedin() {
+  async function handlePublishToLinkedin(content: string) {
     if (!post) return;
     setPublishing(true);
     try {
-      await api.linkedin.publishPost(post.id);
+      await api.linkedin.publishPost(post.id, content);
       setPost({ ...post, publishedToLinkedin: true, publishedAt: new Date().toISOString() });
+      setShowPublishModal(false);
       toast('Post pubblicato su LinkedIn!', 'success');
-      loadStats(post.id);
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Errore nella pubblicazione', 'error');
     } finally {
       setPublishing(false);
     }
   }
-
-  async function loadStats(postId: string) {
-    setStatsLoading(true);
-    try {
-      const data = await api.linkedin.getPostStats(postId);
-      setStats(data);
-    } catch {
-      // Stats may not be available yet
-    } finally {
-      setStatsLoading(false);
-    }
-  }
-
-  // Load stats if post is already published
-  useEffect(() => {
-    if (post?.publishedToLinkedin) {
-      loadStats(post.id);
-    }
-  }, [post?.publishedToLinkedin, post?.id]);
 
   if (loading) {
     return (
@@ -261,21 +251,14 @@ export default function PostDetailPage() {
             </button>
             {user?.linkedinConnected && !post.publishedToLinkedin && (
               <button
-                onClick={handlePublishToLinkedin}
-                disabled={publishing}
-                className="focus-ring inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50"
+                onClick={() => setShowPublishModal(true)}
+                className="focus-ring inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200 hover:scale-105 active:scale-95"
                 style={{ background: '#0A66C2' }}
               >
-                {publishing ? (
-                  'Pubblicazione...'
-                ) : (
-                  <>
-                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-                    </svg>
-                    Pubblica su LinkedIn
-                  </>
-                )}
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                </svg>
+                Pubblica su LinkedIn
               </button>
             )}
             {post.publishedToLinkedin && (
@@ -291,73 +274,6 @@ export default function PostDetailPage() {
             )}
           </div>
         </div>
-
-        {/* LinkedIn Stats */}
-        {post.publishedToLinkedin && (
-          <div
-            className="border-b px-5 py-4 sm:px-6"
-            style={{ borderColor: 'var(--border-default)', background: 'color-mix(in srgb, #0A66C2 3%, var(--bg-secondary))' }}
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <svg className="h-4 w-4" style={{ color: '#0A66C2' }} viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-              </svg>
-              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#0A66C2' }}>
-                Statistiche LinkedIn
-              </span>
-              {post.publishedAt && (
-                <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-                  — Pubblicato il {new Date(post.publishedAt).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </span>
-              )}
-            </div>
-            {statsLoading ? (
-              <div className="grid grid-cols-3 gap-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-tertiary)' }}>
-                    <div className="skeleton mx-auto mb-1 h-4 w-4 rounded" />
-                    <div className="skeleton mx-auto h-6 w-8" />
-                    <div className="skeleton mx-auto mt-1 h-2 w-12" />
-                  </div>
-                ))}
-              </div>
-            ) : stats ? (
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-tertiary)' }}>
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <svg className="h-4 w-4" style={{ color: 'var(--error)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-                    </svg>
-                  </div>
-                  <p className="text-lg font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>{stats.likeCount}</p>
-                  <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Like</p>
-                </div>
-                <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-tertiary)' }}>
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <svg className="h-4 w-4" style={{ color: 'var(--accent)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z" />
-                    </svg>
-                  </div>
-                  <p className="text-lg font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>{stats.commentCount}</p>
-                  <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Commenti</p>
-                </div>
-                <div className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-tertiary)' }}>
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <svg className="h-4 w-4" style={{ color: 'var(--success)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
-                    </svg>
-                  </div>
-                  <p className="text-lg font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>{stats.shareCount}</p>
-                  <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Condivisioni</p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                Le statistiche saranno disponibili dopo qualche ora dalla pubblicazione.
-              </p>
-            )}
-          </div>
-        )}
 
         {/* Content */}
         <div className="relative px-5 py-6 sm:px-6">
@@ -402,6 +318,15 @@ export default function PostDetailPage() {
           </Link>
         </div>
       </div>
+
+      <LinkedInPublishModal
+        isOpen={showPublishModal}
+        content={post.generatedContent}
+        topic={post.topic}
+        publishing={publishing}
+        onPublish={handlePublishToLinkedin}
+        onClose={() => setShowPublishModal(false)}
+      />
     </div>
   );
 }
